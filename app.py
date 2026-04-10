@@ -12,6 +12,7 @@ from flask import (Flask, Response, jsonify, redirect, render_template,
 import config
 import library
 import overlays
+import webcam_directory
 import webcam_sources
 from music_manager import MusicManager, GENRES
 from music_styles import get_styles_for_generator
@@ -175,6 +176,93 @@ def music_toggle(asset_id):
 def music_delete(asset_id):
     library.remove(asset_id)
     return redirect(url_for("music_page"))
+
+
+# ── Discover (Webcam Directory + Search) ─────────────────────────────────────
+
+@app.route("/discover")
+def discover_page():
+    category = request.args.get("category", "")
+    channels = webcam_directory.get_known_channels(category if category else None)
+    saved = webcam_directory.list_directory(category if category else None)
+    suggestions = webcam_directory.get_suggested_searches(category if category else None)
+    return render_template("discover.html",
+                           channels=channels,
+                           saved=saved,
+                           categories=webcam_directory.CATEGORIES,
+                           category_labels=webcam_directory.CATEGORY_LABELS,
+                           current_category=category,
+                           suggestions=suggestions,
+                           theme=config.get_theme(),
+                           results=None,
+                           query="")
+
+
+@app.route("/discover/search", methods=["POST"])
+def discover_search():
+    query = request.form.get("query", "").strip()
+    category = request.form.get("category", "")
+
+    if query:
+        results = webcam_directory.search_youtube(query, max_results=20)
+    elif category:
+        results = webcam_directory.search_by_category(category)
+        query = f"[auto: {webcam_directory.CATEGORY_LABELS.get(category, category)}]"
+    else:
+        results = []
+
+    channels = webcam_directory.get_known_channels(category if category else None)
+    saved = webcam_directory.list_directory(category if category else None)
+    suggestions = webcam_directory.get_suggested_searches(category if category else None)
+
+    return render_template("discover.html",
+                           channels=channels,
+                           saved=saved,
+                           categories=webcam_directory.CATEGORIES,
+                           category_labels=webcam_directory.CATEGORY_LABELS,
+                           current_category=category,
+                           suggestions=suggestions,
+                           theme=config.get_theme(),
+                           results=results,
+                           query=query)
+
+
+@app.route("/discover/add", methods=["POST"])
+def discover_add_to_sources():
+    """Add a discovered stream directly to active sources."""
+    name = request.form.get("name", "").strip()
+    url = request.form.get("url", "").strip()
+    category = request.form.get("category", "")
+
+    if name and url:
+        # Add to active sources
+        webcam_sources.add_source(name, url, "youtube_live", category)
+        # Also save to directory for future reference
+        webcam_directory.save_to_directory(name, url, "youtube_live", category)
+
+    return redirect(url_for("discover_page", category=category))
+
+
+@app.route("/discover/save", methods=["POST"])
+def discover_save_to_directory():
+    """Save a stream to the directory without adding to active sources."""
+    name = request.form.get("name", "").strip()
+    url = request.form.get("url", "").strip()
+    category = request.form.get("category", "")
+
+    if name and url:
+        webcam_directory.save_to_directory(name, url, "youtube_live", category)
+
+    return redirect(url_for("discover_page", category=category))
+
+
+@app.route("/discover/remove", methods=["POST"])
+def discover_remove_from_directory():
+    """Remove a saved entry from the directory."""
+    url = request.form.get("url", "")
+    category = request.form.get("category", "")
+    webcam_directory.remove_from_directory(url)
+    return redirect(url_for("discover_page", category=category))
 
 
 # ── Overlays ─────────────────────────────────────────────────────────────────

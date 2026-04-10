@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Discover Webcams</h2>
+</div>
+
+<!-- Search -->
+<div class="card">
+    <div class="card-header">
+        <h3>Search YouTube Live Streams</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/discover/search">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="query">Search Query</label>
+                    <input type="text" name="query" id="query" value="{{ query }}"
+                           placeholder="e.g., waikiki beach live cam 24/7">
+                </div>
+                <div class="form-group">
+                    <label for="category">Category Filter</label>
+                    <select name="category" id="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == current_category %}selected{% endif %}>
+                            {{ category_labels.get(cat, cat) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button type="submit" class="btn btn-primary">Search</button>
+                {% if current_category %}
+                <button type="submit" name="query" value="" class="btn btn-secondary">
+                    Auto-Search "{{ category_labels.get(current_category, current_category) }}"
+                </button>
+                {% endif %}
+            </div>
+        </form>
+
+        {% if suggestions %}
+        <div style="margin-top: 12px;">
+            <span class="hint">Try:</span>
+            {% for s in suggestions[:8] %}
+            <form method="POST" action="/discover/search" style="display:inline">
+                <input type="hidden" name="query" value="{{ s }}">
+                <input type="hidden" name="category" value="{{ current_category }}">
+                <button type="submit" class="btn btn-sm btn-secondary" style="margin: 2px">{{ s }}</button>
+            </form>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Search Results -->
+{% if results is not none %}
+<div class="card">
+    <div class="card-header">
+        <h3>Results{% if query %} for "{{ query }}"{% endif %}</h3>
+        <span class="badge">{{ results|length }} found</span>
+    </div>
+    <div class="card-body">
+        {% if results %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Title</th>
+                    <th>Channel</th>
+                    <th>Status</th>
+                    <th>Views</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in results %}
+                <tr>
+                    <td>
+                        <strong>{{ r.title[:60] }}{% if r.title|length > 60 %}...{% endif %}</strong>
+                        <br><span class="hint" style="font-size: 11px">{{ r.url }}</span>
+                    </td>
+                    <td>{{ r.channel }}</td>
+                    <td>
+                        {% if r.is_live %}
+                        <span class="badge badge-live"><span class="pulse-dot"></span> LIVE</span>
+                        {% else %}
+                        <span class="badge badge-off">VOD</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ "{:,}".format(r.view_count) if r.view_count else '-' }}</td>
+                    <td>
+                        <div class="btn-row">
+                            <form method="POST" action="/discover/add">
+                                <input type="hidden" name="name" value="{{ r.title[:80] }}">
+                                <input type="hidden" name="url" value="{{ r.url }}">
+                                <input type="hidden" name="category" value="{{ current_category }}">
+                                <button type="submit" class="btn btn-sm btn-primary">Add to Sources</button>
+                            </form>
+                            <form method="POST" action="/discover/save">
+                                <input type="hidden" name="name" value="{{ r.title[:80] }}">
+                                <input type="hidden" name="url" value="{{ r.url }}">
+                                <input type="hidden" name="category" value="{{ current_category }}">
+                                <button type="submit" class="btn btn-sm btn-secondary">Save</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No results found. Try a different search query.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Known Webcam Networks -->
+<div class="card">
+    <div class="card-header">
+        <h3>Known Webcam Networks</h3>
+        <span class="hint">Search these channels on YouTube for reliable 24/7 streams</span>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Channel</th>
+                    <th>Categories</th>
+                    <th>Notes</th>
+                    <th>Quick Search</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ch in channels %}
+                <tr>
+                    <td><strong>{{ ch.channel }}</strong></td>
+                    <td>
+                        {% for cat in ch.categories %}
+                        <span class="badge">{{ category_labels.get(cat, cat) }}</span>
+                        {% endfor %}
+                    </td>
+                    <td class="hint">{{ ch.notes }}</td>
+                    <td>
+                        {% if ch.search_hints %}
+                        <form method="POST" action="/discover/search" style="display:inline">
+                            <input type="hidden" name="query" value="{{ ch.search_hints[0] }}">
+                            <input type="hidden" name="category" value="{{ current_category }}">
+                            <button type="submit" class="btn btn-sm btn-secondary">Search</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Saved Directory -->
+{% if saved %}
+<div class="card">
+    <div class="card-header">
+        <h3>Saved Streams</h3>
+        <span class="badge">{{ saved|length }} saved</span>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in saved %}
+                <tr>
+                    <td>
+                        <strong>{{ s.name }}</strong>
+                        <br><span class="hint" style="font-size: 11px">{{ s.url }}</span>
+                    </td>
+                    <td><span class="badge">{{ category_labels.get(s.category, s.category) }}</span></td>
+                    <td>
+                        <div class="btn-row">
+                            <form method="POST" action="/discover/add">
+                                <input type="hidden" name="name" value="{{ s.name }}">
+                                <input type="hidden" name="url" value="{{ s.url }}">
+                                <input type="hidden" name="category" value="{{ s.category }}">
+                                <button type="submit" class="btn btn-sm btn-primary">Add to Sources</button>
+                            </form>
+                            <form method="POST" action="/discover/remove">
+                                <input type="hidden" name="url" value="{{ s.url }}">
+                                <input type="hidden" name="category" value="{{ current_category }}">
+                                <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

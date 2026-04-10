@@ -13,6 +13,7 @@
             <nav>
                 <a href="/" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
                 <a href="/sources" class="{% if '/sources' in request.path %}active{% endif %}">Sources</a>
+                <a href="/discover" class="{% if '/discover' in request.path %}active{% endif %}">Discover</a>
                 <a href="/music" class="{% if '/music' in request.path %}active{% endif %}">Music</a>
                 <a href="/overlays" class="{% if '/overlays' in request.path %}active{% endif %}">Overlays</a>
                 <a href="/settings" class="{% if request.path == '/settings' %}active{% endif %}">Settings</a>
