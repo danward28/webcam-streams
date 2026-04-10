@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Stream Overlays</h2>
+    <div class="btn-row">
+        {% if scheduler_running %}
+        <form method="POST" action="/overlays/scheduler/stop">
+            <button type="submit" class="btn btn-secondary">Stop Scheduler</button>
+        </form>
+        <span class="badge badge-live">Scheduler Active</span>
+        {% else %}
+        <form method="POST" action="/overlays/scheduler/start">
+            <button type="submit" class="btn btn-primary">Start Scheduler</button>
+        </form>
+        <span class="badge badge-off">Scheduler Off</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if error %}
+<div class="card" style="border-color: #e74c3c; background: rgba(231, 76, 60, 0.1); margin-bottom: 1rem;">
+    <div class="card-body" style="padding: 0.75rem 1rem; color: #e74c3c;">
+        <strong>Error:</strong> {{ error }}
+    </div>
+</div>
+{% endif %}
+
+<!-- Create New Overlay -->
+<div class="card">
+    <div class="card-header">
+        <h3>New Overlay</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/overlays" enctype="multipart/form-data" id="overlay-form">
+            <div class="grid grid-2">
+                <div>
+                    <div class="form-group">
+                        <label for="overlay-type">Type</label>
+                        <select name="type" id="overlay-type" onchange="updateOverlayType()">
+                            <option value="text_banner">Text Banner</option>
+                            <option value="image_text">Image + Text</option>
+                            <option value="full_banner">Full Image Banner</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Style</label>
+                        <div class="style-grid" id="style-grid">
+                            {% for sid, s in overlay_styles.items() %}
+                            <label class="style-swatch {% if loop.first %}selected{% endif %}"
+                                   data-style="{{ sid }}"
+                                   style="background: rgba({{ s.bg[0] }},{{ s.bg[1] }},{{ s.bg[2] }},0.8);
+                                          border-color: rgba({{ s.border[0] }},{{ s.border[1] }},{{ s.border[2] }},1);">
+                                <input type="radio" name="style" value="{{ sid }}"
+                                       {% if loop.first %}checked{% endif %}
+                                       onchange="updatePreview()">
+                                <span style="color: rgba({{ s.text_color[0] }},{{ s.text_color[1] }},{{ s.text_color[2] }},1);">
+                                    {{ s.name }}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="text-group">
+                        <label for="overlay-text">
+                            Text
+                            <span id="char-counter" class="hint" style="float: right;">
+                                0 / {{ overlay_limits.max_text_banner }}
+                            </span>
+                        </label>
+                        <input type="text" name="text" id="overlay-text"
+                               maxlength="{{ overlay_limits.max_text_banner }}"
+                               placeholder="Check out my new book! Available now on Amazon"
+                               oninput="updateTextCounter(); updatePreview();">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="overlay-position">Position</label>
+                        <select name="position" id="overlay-position" onchange="updatePreview()">
+                            <option value="bottom">Bottom</option>
+                            <option value="top">Top</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="image-group">
+                        <label for="overlay-image">Image (for Image+Text or Full Banner)</label>
+                        <input type="file" name="image" id="overlay-image" accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/tiff">
+                        <span class="hint">
+                            Min {{ overlay_limits.min_image_px }}x{{ overlay_limits.min_image_px }}px.
+                            Max {{ overlay_limits.max_image_mb }}MB.
+                            PNG, JPEG, GIF, WebP, BMP, or TIFF.
+                        </span>
+                        <span id="image-validation-msg" class="hint" style="color: #e74c3c; display: none;"></span>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label for="overlay-duration">Show Duration (sec)</label>
+                            <input type="number" name="duration_sec" id="overlay-duration"
+                                   value="15" min="{{ overlay_limits.min_duration }}" max="{{ overlay_limits.max_duration }}">
+                            <span class="hint">{{ overlay_limits.min_duration }}&ndash;{{ overlay_limits.max_duration }}s</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="overlay-interval">Cycle Interval (sec)</label>
+                            <input type="number" name="interval_sec" id="overlay-interval"
+                                   value="300" min="{{ overlay_limits.min_interval }}" max="{{ overlay_limits.max_interval }}">
+                            <span class="hint">{{ overlay_limits.min_interval }}&ndash;{{ overlay_limits.max_interval }}s</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="submit-btn">Create Overlay</button>
+                </div>
+
+                <!-- Live Preview -->
+                <div>
+                    <label>Live Preview</label>
+                    <div class="preview-frame" id="preview-frame">
+                        <img id="preview-img" src="/overlays/live-preview?text=Your+overlay+preview&style=elegant_gold"
+                             alt="Preview">
+                    </div>
+                    <p class="hint">Preview updates as you type and change settings</p>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Existing Overlays -->
+{% if overlays %}
+<div class="card">
+    <div class="card-header">
+        <h3>Active Overlays ({{ overlays|length }})</h3>
+    </div>
+    <div class="card-body">
+        {% for overlay in overlays %}
+        <div class="overlay-item {% if not overlay.enabled %}overlay-disabled{% endif %}">
+            <div class="overlay-preview-thumb">
+                <img src="/overlays/preview/{{ overlay.id }}" alt="Preview">
+            </div>
+            <div class="overlay-info">
+                <h4>{{ overlay.type|replace('_', ' ')|title }}
+                    <span class="badge">{{ (overlay_styles.get(overlay.get('style', 'elegant_gold'), {}).get('name', 'Elegant Gold')) }}</span>
+                </h4>
+                <p>{{ overlay.text or '(image only)' }}</p>
+                <p class="muted">
+                    Show {{ overlay.duration_sec }}s every {{ overlay.interval_sec }}s
+                    &middot; {{ overlay.position|title }}
+                    {% if overlay.image %} &middot; {{ overlay.image }}{% endif %}
+                </p>
+            </div>
+            <div class="overlay-actions">
+                <form method="POST" action="/overlays/toggle/{{ overlay.id }}">
+                    <button type="submit" class="btn btn-sm {% if overlay.enabled %}btn-secondary{% else %}btn-primary{% endif %}">
+                        {{ 'Disable' if overlay.enabled else 'Enable' }}
+                    </button>
+                </form>
+                <form method="POST" action="/overlays/delete/{{ overlay.id }}"
+                      onsubmit="return confirm('Delete this overlay?')">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No overlays configured yet. Create one above to promote books, products, or messages on your stream.</p>
+</div>
+{% endif %}
+
+<script>
+const LIMITS = {
+    text_banner: {{ overlay_limits.max_text_banner }},
+    image_text: {{ overlay_limits.max_image_text }},
+    full_banner: 0,
+    max_image_mb: {{ overlay_limits.max_image_mb }},
+    min_image_px: {{ overlay_limits.min_image_px }}
+};
+
+let previewTimeout;
+function updatePreview() {
+    clearTimeout(previewTimeout);
+    previewTimeout = setTimeout(() => {
+        const text = document.getElementById('overlay-text').value || 'Your overlay preview';
+        const style = document.querySelector('input[name="style"]:checked').value;
+        const type = document.getElementById('overlay-type').value;
+        const position = document.getElementById('overlay-position').value;
+        const url = `/overlays/live-preview?text=${encodeURIComponent(text)}&style=${style}&type=${type}&position=${position}`;
+        document.getElementById('preview-img').src = url;
+    }, 300);
+}
+
+function updateOverlayType() {
+    const type = document.getElementById('overlay-type').value;
+    const textGroup = document.getElementById('text-group');
+    const imageGroup = document.getElementById('image-group');
+    const textInput = document.getElementById('overlay-text');
+
+    // Show/hide fields based on type
+    textGroup.style.display = type === 'full_banner' ? 'none' : '';
+    imageGroup.style.display = type === 'text_banner' ? 'none' : '';
+
+    // Update maxlength based on type
+    const maxLen = LIMITS[type] || LIMITS.text_banner;
+    textInput.maxLength = maxLen;
+    if (textInput.value.length > maxLen) {
+        textInput.value = textInput.value.substring(0, maxLen);
+    }
+    updateTextCounter();
+    updatePreview();
+}
+
+function updateTextCounter() {
+    const type = document.getElementById('overlay-type').value;
+    const textInput = document.getElementById('overlay-text');
+    const counter = document.getElementById('char-counter');
+    const maxLen = LIMITS[type] || LIMITS.text_banner;
+    const len = textInput.value.length;
+    counter.textContent = `${len} / ${maxLen}`;
+    counter.style.color = len >= maxLen ? '#e74c3c' : '';
+}
+
+// Client-side image validation (preview only — server validates too)
+document.getElementById('overlay-image').addEventListener('change', function() {
+    const msg = document.getElementById('image-validation-msg');
+    const file = this.files[0];
+    if (!file) { msg.style.display = 'none'; return; }
+
+    // Check file size
+    const maxBytes = LIMITS.max_image_mb * 1024 * 1024;
+    if (file.size > maxBytes) {
+        msg.textContent = `File too large (${(file.size / (1024*1024)).toFixed(1)}MB). Max ${LIMITS.max_image_mb}MB.`;
+        msg.style.display = '';
+        return;
+    }
+
+    // Check resolution
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = function() {
+        URL.revokeObjectURL(url);
+        if (img.width < LIMITS.min_image_px || img.height < LIMITS.min_image_px) {
+            msg.textContent = `Image too small (${img.width}x${img.height}). Min ${LIMITS.min_image_px}x${LIMITS.min_image_px}px.`;
+            msg.style.display = '';
+        } else {
+            msg.textContent = `${img.width}x${img.height} — looks good`;
+            msg.style.color = '#2ecc71';
+            msg.style.display = '';
+        }
+    };
+    img.onerror = function() {
+        URL.revokeObjectURL(url);
+        msg.textContent = 'Could not read image. Is it a valid file?';
+        msg.style.display = '';
+    };
+    img.src = url;
+});
+
+// Style swatch selection highlighting
+document.querySelectorAll('.style-swatch').forEach(swatch => {
+    swatch.querySelector('input').addEventListener('change', () => {
+        document.querySelectorAll('.style-swatch').forEach(s => s.classList.remove('selected'));
+        swatch.classList.add('selected');
+    });
+});
+
+// Initialize field visibility on page load
+updateOverlayType();
+</script>
+{% endblock %}

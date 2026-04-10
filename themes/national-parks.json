@@ -1,0 +1,21 @@
+{
+    "name": "National Parks",
+    "slug": "national-parks",
+    "description": "America's national parks — geysers, canyons, and wilderness",
+    "default_genre": "ambient",
+    "cycle_interval_sec": 900,
+    "port": 8085,
+    "branding": {
+        "title": "National Parks Live",
+        "subtitle": "America's wilderness in real time",
+        "accent_color": "#228B22"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: old faithful live cam, yellowstone live, grand canyon live webcam"
+        }
+    ]
+}

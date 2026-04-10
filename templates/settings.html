@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Settings</h2>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Stream Configuration</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/settings">
+            <div class="form-group">
+                <label for="stream-key">YouTube Stream Key</label>
+                <div class="input-password">
+                    <input type="password" name="YOUTUBE_STREAM_KEY" id="stream-key"
+                           value="{{ config.YOUTUBE_STREAM_KEY }}"
+                           placeholder="xxxx-xxxx-xxxx-xxxx">
+                    <button type="button" class="btn-toggle-pw" onclick="togglePw('stream-key')">Show</button>
+                </div>
+                <span class="hint">From YouTube Studio > Go Live > Stream Key</span>
+            </div>
+
+            <div class="form-group">
+                <label for="cycle-interval">Source Cycle Interval (seconds)</label>
+                <input type="number" name="CYCLE_INTERVAL" id="cycle-interval"
+                       value="{{ config.CYCLE_INTERVAL }}" min="60" max="7200">
+                <span class="hint">How often to switch webcam sources (60-7200 seconds)</span>
+            </div>
+
+            <div class="form-group">
+                <label for="default-genre">Default Music Genre</label>
+                <select name="DEFAULT_GENRE" id="default-genre">
+                    {% for g in ['instrumental', 'lo-fi', 'jazz', 'classical', 'ambient', 'acoustic', 'electronic', 'pop-covers'] %}
+                    <option value="{{ g }}" {% if g == config.DEFAULT_GENRE %}selected{% endif %}>{{ g|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <hr>
+            <p class="hint">API keys below are optional — only needed for AI music generation.</p>
+
+            <div class="form-group">
+                <label for="anthropic-key">Anthropic API Key (optional)</label>
+                <div class="input-password">
+                    <input type="password" name="ANTHROPIC_API_KEY" id="anthropic-key"
+                           value="{{ config.ANTHROPIC_API_KEY }}"
+                           placeholder="sk-ant-...">
+                    <button type="button" class="btn-toggle-pw" onclick="togglePw('anthropic-key')">Show</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="suno-key">Suno API Key (optional)</label>
+                <div class="input-password">
+                    <input type="password" name="SUNO_API_KEY" id="suno-key"
+                           value="{{ config.SUNO_API_KEY }}"
+                           placeholder="(optional)">
+                    <button type="button" class="btn-toggle-pw" onclick="togglePw('suno-key')">Show</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Theme Info</h3>
+    </div>
+    <div class="card-body">
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="stat-value">{{ config.STREAM_THEME }}</span>
+                <span class="stat-label">Active Theme</span>
+            </div>
+        </div>
+        {% if theme %}
+        <p class="muted">{{ theme.description if theme.description else 'No description' }}</p>
+        {% endif %}
+        <p class="hint">Theme is set via STREAM_THEME environment variable.</p>
+    </div>
+</div>
+
+<script>
+function togglePw(id) {
+    const input = document.getElementById(id);
+    const btn = input.nextElementSibling;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = 'Hide';
+    } else {
+        input.type = 'password';
+        btn.textContent = 'Show';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{
+    "name": "Beach & Coastal",
+    "slug": "beach",
+    "description": "Relaxing beach and surf webcams from around the world",
+    "default_genre": "lo-fi",
+    "cycle_interval_sec": 600,
+    "port": 8083,
+    "branding": {
+        "title": "Beach Vibes Live",
+        "subtitle": "Surf, sand & chill beats",
+        "accent_color": "#46A0E6"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: surf cam live 24/7, beach cam live. Check Surfline, EarthCam channels"
+        }
+    ]
+}

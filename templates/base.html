@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ theme.branding.title if theme and theme.branding else 'Webcam Stream' }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <h1 class="logo">{{ theme.branding.title if theme and theme.branding else 'Webcam Stream' }}</h1>
+            <nav>
+                <a href="/" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
+                <a href="/sources" class="{% if '/sources' in request.path %}active{% endif %}">Sources</a>
+                <a href="/music" class="{% if '/music' in request.path %}active{% endif %}">Music</a>
+                <a href="/overlays" class="{% if '/overlays' in request.path %}active{% endif %}">Overlays</a>
+                <a href="/settings" class="{% if request.path == '/settings' %}active{% endif %}">Settings</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <span class="stream-indicator" id="stream-indicator">
+                <span class="dot" id="stream-dot"></span>
+                <span id="stream-label">Offline</span>
+            </span>
+            <span class="sparkle-text">{{ theme.branding.subtitle if theme and theme.branding else 'Live Webcams + Music' }}</span>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+    "name": "Disney Parks",
+    "slug": "disney",
+    "description": "Relaxing Disney resort area webcams with magical music",
+    "default_genre": "instrumental",
+    "cycle_interval_sec": 600,
+    "port": 8081,
+    "branding": {
+        "title": "Disney Parks Live",
+        "subtitle": "Magical views with enchanting music",
+        "accent_color": "#1E90FF"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: disney park live cam 24/7"
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+venv/
+__pycache__/
+*.pyc
+.env
+config.json
+output/
+library/videos/
+library/music/
+library/thumbnails/
+library/catalog.json
+webcams/sources.json
+overlays/current.png
+overlays/images/
+overlays/config.json

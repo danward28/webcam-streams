@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Dashboard</h2>
+</div>
+
+<div class="grid grid-2">
+    <!-- Stream Status -->
+    <div class="card card-glow">
+        <div class="card-header">
+            <h3>Stream</h3>
+            <span class="badge badge-{{ 'live' if stream.status == 'live' else 'off' }}">
+                {% if stream.status == 'live' %}
+                    <span class="pulse-dot"></span> LIVE
+                {% else %}
+                    {{ stream.status|upper }}
+                {% endif %}
+            </span>
+        </div>
+        <div class="card-body">
+            {% if stream.status == 'live' %}
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <span class="stat-value" id="uptime">{{ stream.uptime_str }}</span>
+                        <span class="stat-label">Uptime</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ source_stats.online if source_stats else 0 }}</span>
+                        <span class="stat-label">Sources Online</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">{{ lib_stats.music_enabled }}</span>
+                        <span class="stat-label">Music Tracks</span>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <form method="POST" action="/stream/stop">
+                        <button type="submit" class="btn btn-danger">Stop Stream</button>
+                    </form>
+                    <form method="POST" action="/stream/skip">
+                        <button type="submit" class="btn btn-secondary">Skip Source</button>
+                    </form>
+                </div>
+            {% elif stream.status == 'error' %}
+                <p class="error-text">{{ stream.error }}</p>
+                <form method="POST" action="/stream/start">
+                    <button type="submit" class="btn btn-primary">Retry</button>
+                </form>
+            {% else %}
+                {% if source_stats and source_stats.online > 0 and lib_stats.music_enabled > 0 %}
+                <p class="muted">{{ source_stats.online }} sources online, {{ lib_stats.music_enabled }} tracks ready</p>
+                <form method="POST" action="/stream/start">
+                    <button type="submit" class="btn btn-primary btn-lg">Start Stream</button>
+                </form>
+                {% else %}
+                <div class="empty-state-inline">
+                    {% if not source_stats or source_stats.total == 0 %}
+                    <p>No webcam sources configured</p>
+                    <a href="/sources" class="btn btn-primary">Add Sources</a>
+                    {% elif lib_stats.music_total == 0 %}
+                    <p>No music tracks in library</p>
+                    <a href="/music" class="btn btn-primary">Add Music</a>
+                    {% else %}
+                    <p>No sources online or no tracks enabled</p>
+                    <a href="/sources" class="btn btn-secondary">Check Sources</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Current Source -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Current Source</h3>
+            {% if cycler and cycler.running %}
+            <span class="badge badge-active">
+                <span class="pulse-dot"></span> Cycling
+            </span>
+            {% else %}
+            <span class="badge badge-off">Idle</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if stream.status == 'live' and stream.current_source %}
+                <p class="task-title"><strong>{{ stream.current_source }}</strong></p>
+                <p class="muted">On this source for {{ stream.source_time_str }}</p>
+                {% if cycler %}
+                <p class="muted">Cycling every {{ (cycler.cycle_interval_sec / 60)|int }} min
+                    ({{ cycler.current_index + 1 }}/{{ cycler.total_sources }} sources)</p>
+                {% endif %}
+            {% else %}
+                <p class="muted">No source active</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <!-- Music Status -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Music</h3>
+            <span class="badge">{{ music.genre|title }}</span>
+        </div>
+        <div class="card-body">
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ music.track_count }}</span>
+                    <span class="stat-label">Tracks</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ lib_stats.total_duration_min }}</span>
+                    <span class="stat-label">Minutes</span>
+                </div>
+            </div>
+            <div class="btn-row">
+                <a href="/music" class="btn btn-sm btn-secondary">Manage Music</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generation Status -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Generation</h3>
+            {% if current_task %}
+            <span class="badge badge-active">
+                <span class="pulse-dot"></span> Working
+            </span>
+            {% elif queue_size > 0 %}
+            <span class="badge">{{ queue_size }} queued</span>
+            {% else %}
+            <span class="badge badge-off">Idle</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if current_task %}
+                <div class="current-task">
+                    <p class="task-title"><strong>{{ current_task.generator|title }}</strong></p>
+                    <div class="progress-bar" id="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p class="progress-text" id="progress-text">{{ current_task.progress }}</p>
+                </div>
+            {% else %}
+                <a href="/music" class="btn btn-primary">Generate Music</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+{% if history %}
+<div class="card">
+    <div class="card-header">
+        <h3>Recent Activity</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Generator</th>
+                    <th>Style</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in history %}
+                <tr>
+                    <td><span class="badge">{{ task.generator }}</span></td>
+                    <td>{{ task.get('extra', {}).get('style_id', 'N/A') }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'live' if task.status == 'done' else 'error' }}">
+                            {{ task.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

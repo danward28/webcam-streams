@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Webcam Sources</h2>
+</div>
+
+<!-- Add Source -->
+<div class="card">
+    <div class="card-header">
+        <h3>Add Source</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/sources" id="add-source-form">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" name="name" id="name" required
+                           placeholder="e.g., Old Faithful Geyser">
+                </div>
+                <div class="form-group">
+                    <label for="url">URL</label>
+                    <input type="text" name="url" id="source-url" required
+                           placeholder="YouTube live URL or HLS/RTSP stream URL">
+                </div>
+            </div>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="type">Type</label>
+                    <select name="type" id="source-type">
+                        <option value="youtube_live">YouTube Live</option>
+                        <option value="hls">HLS Stream</option>
+                        <option value="rtsp">RTSP Stream</option>
+                        <option value="mjpeg">MJPEG Feed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <input type="text" name="category" id="category"
+                           placeholder="e.g., national_parks">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes (optional)</label>
+                <input type="text" name="notes" id="notes"
+                       placeholder="e.g., NPS official webcam">
+            </div>
+            <div class="btn-row">
+                <button type="submit" class="btn btn-primary">Add Source</button>
+                <button type="button" class="btn btn-secondary" id="test-btn"
+                        onclick="testSource()">Test URL</button>
+                <span id="test-result" class="hint"></span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Source Stats -->
+<div class="card">
+    <div class="card-header">
+        <h3>Sources</h3>
+        <div class="btn-row">
+            <form method="POST" action="/sources/health-check" style="display:inline">
+                <button type="submit" class="btn btn-sm btn-secondary">Run Health Check</button>
+            </form>
+            <span class="badge">{{ stats.total }} total</span>
+            <span class="badge badge-live">{{ stats.online }} online</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if sources %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Last Check</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sources %}
+                <tr class="{% if not s.enabled %}muted{% endif %}">
+                    <td>
+                        <strong>{{ s.name }}</strong>
+                        {% if s.notes %}<br><span class="hint">{{ s.notes }}</span>{% endif %}
+                    </td>
+                    <td><span class="badge">{{ s.type }}</span></td>
+                    <td>{{ s.category or '-' }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'live' if s.status == 'online' else 'error' if s.status == 'offline' else 'off' }}">
+                            {{ s.status }}
+                        </span>
+                        {% if s.fail_count > 0 %}
+                        <span class="hint">({{ s.fail_count }} fails)</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ s.last_check or 'Never' }}</td>
+                    <td>
+                        <div class="btn-row">
+                            <form method="POST" action="/sources/toggle/{{ s.id }}">
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    {{ 'Disable' if s.enabled else 'Enable' }}
+                                </button>
+                            </form>
+                            <form method="POST" action="/sources/delete/{{ s.id }}"
+                                  onsubmit="return confirm('Delete this source?')">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state-inline">
+            <p>No webcam sources added yet. Add one above to get started.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+async function testSource() {
+    const url = document.getElementById('source-url').value;
+    const type = document.getElementById('source-type').value;
+    const result = document.getElementById('test-result');
+    const btn = document.getElementById('test-btn');
+
+    if (!url) { result.textContent = 'Enter a URL first'; return; }
+
+    btn.disabled = true;
+    result.textContent = 'Testing...';
+
+    try {
+        const form = new FormData();
+        form.append('url', url);
+        form.append('type', type);
+        const resp = await fetch('/sources/test', { method: 'POST', body: form });
+        const data = await resp.json();
+        result.textContent = data.ok ? 'OK: ' + data.info : 'FAIL: ' + data.info;
+        result.style.color = data.ok ? '#06D6A0' : '#EF476F';
+    } catch (e) {
+        result.textContent = 'Error: ' + e.message;
+        result.style.color = '#EF476F';
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{
+    "name": "Tropical Islands",
+    "slug": "tropical",
+    "description": "Crystal clear waters and palm-fringed beaches",
+    "default_genre": "lo-fi",
+    "cycle_interval_sec": 600,
+    "port": 8090,
+    "branding": {
+        "title": "Tropical Paradise Live",
+        "subtitle": "Island vibes with chill beats",
+        "accent_color": "#FF6347"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: tropical beach live cam, hawaii beach cam live, key west live cam"
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "name": "Mountain & Alpine",
+    "slug": "mountain",
+    "description": "Mountain peaks, ski resorts, and alpine scenery",
+    "default_genre": "classical",
+    "cycle_interval_sec": 900,
+    "port": 8087,
+    "branding": {
+        "title": "Mountain Views Live",
+        "subtitle": "Alpine peaks with classical music",
+        "accent_color": "#87CEEB"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: ski resort live cam, alps mountain live webcam, matterhorn live"
+        }
+    ]
+}

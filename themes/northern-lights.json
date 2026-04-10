@@ -1,0 +1,21 @@
+{
+    "name": "Northern Lights",
+    "slug": "northern-lights",
+    "description": "Aurora borealis webcams from Arctic regions",
+    "default_genre": "ambient",
+    "cycle_interval_sec": 1200,
+    "port": 8086,
+    "branding": {
+        "title": "Northern Lights Live",
+        "subtitle": "Aurora borealis with ambient soundscapes",
+        "accent_color": "#00FF7F"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: aurora borealis live cam, northern lights iceland live. Check Churchill Northern Studies Centre"
+        }
+    ]
+}

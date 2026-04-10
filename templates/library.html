@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Library</h2>
+    <div class="filter-row">
+        <a href="/library" class="btn btn-sm {% if not current_filter %}active{% endif %}">All</a>
+        <a href="/library?generator=piano" class="btn btn-sm {% if current_filter == 'piano' %}active{% endif %}">Piano</a>
+        <a href="/library?generator=ace_step" class="btn btn-sm {% if current_filter == 'ace_step' %}active{% endif %}">ACE-Step</a>
+        <a href="/library?generator=musicgen" class="btn btn-sm {% if current_filter == 'musicgen' %}active{% endif %}">MusicGen</a>
+        <a href="/library?generator=suno" class="btn btn-sm {% if current_filter == 'suno' %}active{% endif %}">Suno</a>
+    </div>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+    <span>{{ stats.total }} videos</span>
+    <span>{{ stats.enabled }} enabled</span>
+    <span>{{ stats.total_duration_min }} min total</span>
+    <span>{{ stats.total_size_mb }} MB</span>
+</div>
+
+{% if assets %}
+<div class="grid grid-3">
+    {% for asset in assets %}
+    <div class="card card-asset {% if not asset.enabled %}card-disabled{% endif %}">
+        <div class="asset-thumb" onclick="previewVideo('{{ asset.id }}')">
+            <img src="/library/thumb/{{ asset.id }}" alt="{{ asset.song }}"
+                 onerror="this.style.display='none'">
+            <div class="thumb-overlay">
+                <span class="play-icon">&#9654;</span>
+            </div>
+            <span class="asset-duration">{{ "%.0f"|format(asset.duration_sec) }}s</span>
+        </div>
+        <div class="card-body">
+            <h4>{{ asset.song or 'Untitled' }}</h4>
+            <p class="muted">
+                {{ asset.movie }}
+                {% if asset.style %} &middot; {{ asset.style[:30] }}{% endif %}
+            </p>
+            <div class="asset-meta">
+                <span class="badge">{{ asset.generator }}</span>
+                <span>{{ asset.file_size_mb }} MB</span>
+            </div>
+            <div class="btn-row">
+                <form method="POST" action="/library/toggle/{{ asset.id }}">
+                    <button type="submit" class="btn btn-sm {% if asset.enabled %}btn-secondary{% else %}btn-primary{% endif %}">
+                        {{ 'Disable' if asset.enabled else 'Enable' }}
+                    </button>
+                </form>
+                <form method="POST" action="/library/delete/{{ asset.id }}"
+                      onsubmit="return confirm('Delete this video?')">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No videos in the library yet.</p>
+    <a href="/generate" class="btn btn-primary">Generate Your First Video</a>
+</div>
+{% endif %}
+
+<!-- Video Preview Modal -->
+<div class="modal" id="video-modal" onclick="closeModal(event)">
+    <div class="modal-content">
+        <video id="preview-video" controls></video>
+        <button class="modal-close" onclick="document.getElementById('video-modal').classList.remove('show')">&times;</button>
+    </div>
+</div>
+
+<script>
+function previewVideo(id) {
+    const modal = document.getElementById('video-modal');
+    const video = document.getElementById('preview-video');
+    video.src = '/library/video/' + id;
+    modal.classList.add('show');
+    video.play();
+}
+function closeModal(e) {
+    if (e.target === e.currentTarget) {
+        e.currentTarget.classList.remove('show');
+        document.getElementById('preview-video').pause();
+    }
+}
+</script>
+{% endblock %}

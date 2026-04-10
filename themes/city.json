@@ -1,0 +1,21 @@
+{
+    "name": "City Skylines",
+    "slug": "city",
+    "description": "Major city skyline livestreams from around the world",
+    "default_genre": "jazz",
+    "cycle_interval_sec": 600,
+    "port": 8084,
+    "branding": {
+        "title": "City Skylines Live",
+        "subtitle": "World skylines with smooth jazz",
+        "accent_color": "#FFD700"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: city skyline live cam 24/7. Check EarthCam channel"
+        }
+    ]
+}

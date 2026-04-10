@@ -1,0 +1,21 @@
+{
+    "name": "European Charm",
+    "slug": "european",
+    "description": "Charming European city views — canals, plazas, and old towns",
+    "default_genre": "classical",
+    "cycle_interval_sec": 600,
+    "port": 8089,
+    "branding": {
+        "title": "European Charm Live",
+        "subtitle": "Old world beauty with classical music",
+        "accent_color": "#DAA520"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: venice live cam, prague old town live. Check SkylineWebcams channel"
+        }
+    ]
+}

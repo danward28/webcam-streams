@@ -1,0 +1,21 @@
+{
+    "name": "New England",
+    "slug": "newengland",
+    "description": "Scenic harbors, lighthouses, and coastal New England views",
+    "default_genre": "acoustic",
+    "cycle_interval_sec": 900,
+    "port": 8082,
+    "branding": {
+        "title": "New England Live",
+        "subtitle": "Harbors, lighthouses & coastal charm",
+        "accent_color": "#2E8B57"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: new england harbor live cam, maine lighthouse live"
+        }
+    ]
+}

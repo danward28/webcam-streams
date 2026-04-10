@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Music Library</h2>
+</div>
+
+<div class="grid grid-2">
+    <!-- Upload Music -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Upload Track</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="/music/upload" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">Audio File (MP3, AAC, WAV)</label>
+                    <input type="file" name="file" id="file" accept=".mp3,.aac,.m4a,.wav,.ogg" required>
+                </div>
+                <div class="form-group">
+                    <label for="title">Title (optional)</label>
+                    <input type="text" name="title" id="title" placeholder="Track title">
+                </div>
+                <div class="form-group">
+                    <label for="upload-genre">Genre</label>
+                    <select name="genre" id="upload-genre">
+                        {% for g in genres %}
+                        <option value="{{ g }}" {% if g == music.genre %}selected{% endif %}>{{ g|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI Generate Music -->
+    <div class="card">
+        <div class="card-header">
+            <h3>AI Generate</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="/music/generate" id="generate-form">
+                <div class="form-group">
+                    <label>Generator</label>
+                    <div class="tab-row" id="generator-tabs">
+                        <button type="button" class="tab active" data-generator="ace_step">ACE-Step</button>
+                        <button type="button" class="tab" data-generator="musicgen">MusicGen</button>
+                        <button type="button" class="tab" data-generator="suno">Suno</button>
+                    </div>
+                    <input type="hidden" name="generator" id="generator-input" value="ace_step">
+                </div>
+
+                <!-- ACE-Step -->
+                <div class="generator-panel" id="panel-ace_step">
+                    <div class="form-group">
+                        <label for="ace_step_style">Style</label>
+                        <select name="style_id" id="ace_step_style">
+                            {% for s in ace_step_styles %}
+                            <option value="{{ s.id }}">{{ s.label }} ({{ s.genre }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <p class="hint">Generates a 6-minute track locally.</p>
+                </div>
+
+                <!-- MusicGen -->
+                <div class="generator-panel hidden" id="panel-musicgen">
+                    <div class="form-group">
+                        <label for="musicgen_style">Style</label>
+                        <select name="style_id" id="musicgen_style">
+                            {% for s in musicgen_styles %}
+                            <option value="{{ s.id }}">{{ s.label }} ({{ s.genre }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <p class="hint">Meta's MusicGen. Requires audiocraft + CUDA.</p>
+                </div>
+
+                <!-- Suno -->
+                <div class="generator-panel hidden" id="panel-suno">
+                    <div class="form-group">
+                        <label for="suno_style">Style</label>
+                        <select name="style_id" id="suno_style">
+                            {% for s in suno_styles %}
+                            <option value="{{ s.id }}">{{ s.title }} ({{ s.genre }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <p class="hint">Suno cloud API. Requires SUNO_API_KEY.</p>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Generate</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Current Genre + Library -->
+<div class="card">
+    <div class="card-header">
+        <h3>Library</h3>
+        <div class="btn-row">
+            <form method="POST" action="/music/genre" style="display:inline">
+                <select name="genre" onchange="this.form.submit()">
+                    {% for g in genres %}
+                    <option value="{{ g }}" {% if g == music.genre %}selected{% endif %}>{{ g|title }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <span class="badge">{{ stats.music_total }} tracks</span>
+            <span class="badge">{{ stats.total_duration_min }} min</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if stats.by_genre %}
+        <div class="stats-row">
+            {% for genre, count in stats.by_genre.items() %}
+            <div class="stat-item">
+                <span class="stat-value">{{ count }}</span>
+                <span class="stat-label">{{ genre|title }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if assets %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Genre</th>
+                    <th>Duration</th>
+                    <th>Source</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assets %}
+                <tr class="{% if not a.enabled %}muted{% endif %}">
+                    <td>{{ a.title or a.song or 'Untitled' }}</td>
+                    <td><span class="badge">{{ a.genre or 'untagged' }}</span></td>
+                    <td>{{ "%.0f"|format(a.duration_sec) }}s</td>
+                    <td>{{ a.generator }}</td>
+                    <td>
+                        <div class="btn-row">
+                            <form method="POST" action="/music/toggle/{{ a.id }}">
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    {{ 'Disable' if a.enabled else 'Enable' }}
+                                </button>
+                            </form>
+                            <form method="POST" action="/music/delete/{{ a.id }}"
+                                  onsubmit="return confirm('Delete this track?')">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state-inline">
+            <p>No music tracks yet. Upload some or generate with AI above.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('#generator-tabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('#generator-tabs .tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const gen = tab.dataset.generator;
+        document.getElementById('generator-input').value = gen;
+        document.querySelectorAll('.generator-panel').forEach(p => p.classList.add('hidden'));
+        document.getElementById('panel-' + gen).classList.remove('hidden');
+    });
+});
+</script>
+{% endblock %}

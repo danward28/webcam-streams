@@ -1,0 +1,21 @@
+{
+    "name": "Wildlife",
+    "slug": "wildlife",
+    "description": "Live animal cams — bears, eagles, reef cams, safari",
+    "default_genre": "acoustic",
+    "cycle_interval_sec": 900,
+    "port": 8088,
+    "branding": {
+        "title": "Wildlife Live",
+        "subtitle": "Nature's creatures in real time",
+        "accent_color": "#8B4513"
+    },
+    "sources": [
+        {
+            "name": "Example — Replace with real YouTube live URL",
+            "url": "https://www.youtube.com/watch?v=REPLACE_ME",
+            "type": "youtube_live",
+            "notes": "Search YouTube for: bear cam live, eagle nest cam live. Check explore.org channel — they run Katmai bears, African wildlife, reef cams"
+        }
+    ]
+}
